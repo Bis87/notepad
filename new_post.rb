@@ -3,10 +3,10 @@ require_relative 'memo.rb'
 require_relative 'link.rb'
 require_relative 'task.rb'
 
-puts 'Hi! I`m your notepad'
+puts 'Hi! I`m your notepad with db'
 puts 'What do you want to write in'
 
-choices = Post.post_types
+choices = Post.post_types.keys
 
 choice = -1
 
@@ -18,10 +18,10 @@ until choice >= 0 && choice < choices.size
   choice = STDIN.gets.chomp.to_i
 end
 
-entry = Post.create(choice)
+entry = Post.create(choices[choice])
 
 entry.read_from_console
 
-entry.save
+id = entry.save_to_db
 
-puts "Your #{choices}"
+puts "Your db id = #{id}"
