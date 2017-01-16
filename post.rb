@@ -14,8 +14,77 @@ class Post
   # Статический метод. Внего передается индекс элемента массива из post_types
   # Возвращает новый объект выбранного класса
   def self.create(type)
+    puts "type: #{type}"
     return post_types[type].new
   end
+
+  def self.find_by_id(id)
+
+    db = SQLite3::Database.open(@@SQLITE_DB_FILE)
+
+      db.results_as_hash = true
+    begin
+      result = db.execute("SELECT * FROM posts WHERE rowid = ?", id)
+    rescue SQLite3::SQLException => e
+      puts "Query to db #{@@SQLITE_DB_FILE} failed"
+      abort e.message
+    end
+
+      result = result[0] if result.is_a? Array
+
+      db.close
+
+      if result.empty?
+        puts "this id: #{id} absent in db"
+        return nil
+      else
+        post = create(result['type'])
+
+        post.load_data(result)
+
+        db.close
+
+        return post
+      end
+    end
+
+  # return records in table
+    def self.find_all(limit, type)
+
+      db = SQLite3::Database.open(@@SQLITE_DB_FILE)
+
+      db.results_as_hash = false
+
+      #create query with necessary conditions
+      query = "SELECT rowid, * FROM posts "
+
+      query += "WHERE type = :type " unless type.nil?
+      query += "ORDER by rowid DESC "
+
+      query += "LIMIT :limit " unless limit.nil?
+
+      begin
+        statment = db.prepare query
+      rescue SQLite3::SQLException => e
+        puts "Query to db #{@@SQLITE_DB_FILE} failed"
+        abort e.message
+      end
+
+      statment.bind_param('type', type) unless type.nil?
+      statment.bind_param('limit', limit) unless limit.nil?
+
+      begin
+        result = statment.execute!
+      rescue SQLite3::SQLException => e
+        puts "Query to db #{@@SQLITE_DB_FILE} failed"
+        abort e.message
+      end
+
+      statment.close
+      db.close
+
+      return result
+    end
 
   #Конструктор
   def initialize
@@ -58,11 +127,11 @@ class Post
 
   def save_to_db
 
-
-
     db = SQLite3::Database.open(@@SQLITE_DB_FILE)
 
     db.results_as_hash = true
+
+    begin
 
     db.execute(
           "INSERT INTO posts (" +
@@ -76,6 +145,10 @@ class Post
           ")",
               to_db_hash.values
     )
+    rescue SQLite3::SQLException => e
+      puts "Query to db #{@@SQLITE_DB_FILE} failed"
+      abort e.message
+    end
 
     insert_row_id = db.last_insert_row_id
 
@@ -92,4 +165,8 @@ class Post
     }
   end
 
+  # получает на вход хэш массив данных и должен заполнить свои поля
+  def load_data(data_hash)
+    @created_at = Time.parse(data_hash['created_at'])
+  end
 end
