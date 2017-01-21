@@ -8,7 +8,7 @@ class Post
 
   #Статический метод. Возвращает все возможные типы постов(всех наследников)
   def self.post_types
-    {'Memo' => Memo, 'Task' => Task, 'Link' => Link}
+    {'Memo' => Memo, 'Task' => Task, 'Link' => Link, 'Tweet' => Tweet}
   end
 
   # Статический метод. Внего передается индекс элемента массива из post_types
